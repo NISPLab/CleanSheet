@@ -18,3 +18,11 @@ poetry install --without tools
 ```bash
 poetry run pytest tests/
 ```
+
+## Sample trigger
+```Python
+# load trigger and mask
+a = torch.load('epoch_99.pth')
+tri = a['trigger']
+mask = a['mask']
+```
