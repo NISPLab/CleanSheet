@@ -1,6 +1,8 @@
 # Hijacking-Attacks-against-Neural-Network
 Hijacking Attacks against Neural Network by Analyzing Training Data Implementation
 
+[![arXiv](https://img.shields.io/badge/arXiv-2401.09740-b31b1b.svg)](https://arxiv.org/abs/2401.09740)
+
 ## Preparation
 
 1. Download python 3.10
