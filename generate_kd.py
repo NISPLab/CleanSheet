@@ -1,20 +1,4 @@
-from torch.utils.data import DataLoader
-import torch.optim as optim
-from tqdm import tqdm
-from torch.optim import lr_scheduler
-import os
-import torch
-from resnet import resnet34, resnet18
-from vgg import vgg16
-from mobilenet_v2 import mobilenet_v2
-import torch.nn as nn
-from utils import Trigger
-import torchvision
-from torchvision import transforms
-from poison_dataset import PoisonDataset
-import numpy as np
-from torch.nn import functional as F
-
+from packet import *
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 # config
@@ -28,6 +12,7 @@ epochs_per_validation = 5
 train_student_with_kd = True
 pr = 0.1
 best_model_index = 0
+beta = 1.0
 
 clean_train_data = torchvision.datasets.CIFAR10(root="dataset",
                                                 train=True,
@@ -148,7 +133,7 @@ for epoch in range(epochs):
 
                 with torch.no_grad():
                     tri.mask.clamp_(0, 1)
-                    tri.trigger.clamp_(-1, 1)
+                    tri.trigger.clamp_(-1*beta, 1*beta)
             masks.append(tri.mask.clone())
             triggers.append(tri.trigger.clone())
         else:
@@ -192,11 +177,11 @@ for epoch in range(epochs):
                 trigger_optimizer.step()
                 
                 if student_trainable_when_training_trigger:
-                    soptim.SGD(model.parameters(), lr=0.2, momentum=0.9, weight_decay=5e-4).step()
+                    optim.SGD(model.parameters(), lr=0.2, momentum=0.9, weight_decay=5e-4).step()
 
                 with torch.no_grad():
                     tri.mask.clamp_(0, 1)
-                    tri.trigger.clamp_(-1, 1)
+                    tri.trigger.clamp_(-1*beta, 1*beta)
             masks.append(tri.mask.clone())
             triggers.append(tri.trigger.clone())
     
@@ -262,15 +247,13 @@ for epoch in range(epochs):
 
     # Save the model on a regular basis
     if epoch == 0 or (epoch + 1) % save_interval == 0:
-        torch.save(tri.mask, 'models/mask.npy')
-        torch.save(tri.trigger, 'models/trigger.npy')
-        teacher_p = 'models/teacher/epoch_{}.pth'.format(epoch)
-        trigger_p = 'models/trigger/epoch_{}.pth'.format(epoch)
-        student1_p = 'models/student1/epoch_{}.pth'.format(epoch)
-        student2_p = 'models/student2/epoch_{}.pth'.format(epoch)
-        student3_p = 'models/student3/epoch_{}.pth'.format(epoch)
-        torch.save(teacher.state_dict(), teacher_p)
+        trigger_p = 'trigger/epoch_{}.pth'.format(epoch)
+        teacher_p = 'models/weight/teacher/epoch_{}.pth'.format(epoch)
+        student1_p = 'models/weight/student1/epoch_{}.pth'.format(epoch)
+        student2_p = 'models/weight/student2/epoch_{}.pth'.format(epoch)
+        student3_p = 'models/weight/student3/epoch_{}.pth'.format(epoch)
         torch.save(tri.state_dict(), trigger_p)
+        torch.save(teacher.state_dict(), teacher_p)
         torch.save(student1.state_dict(), student1_p)
         torch.save(student2.state_dict(), student2_p)
         torch.save(student3.state_dict(), student3_p)
